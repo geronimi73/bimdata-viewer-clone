@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IFC Viewer</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Top bar ─────────────────────────────────────────────── */
+        #topbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            background: #16213e;
+            border-bottom: 1px solid #0f3460;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        #topbar h1 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e94560;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+
+        #upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            background: #e94560;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        #upload-btn:hover { background: #c73652; }
+
+        #file-input { display: none; }
+
+        #status {
+            font-size: 0.78rem;
+            color: #9ab;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        /* ── Main area ───────────────────────────────────────────── */
+        #viewer-wrap {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #myCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+
+        /* ── Nav cube ────────────────────────────────────────────── */
+        #myNavCubeCanvas {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            bottom: 16px;
+            right: 16px;
+            z-index: 20;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        @media (min-width: 600px) {
+            #myNavCubeCanvas {
+                width: 180px;
+                height: 180px;
+            }
+        }
+
+        /* ── Drop overlay ─────────────────────────────────────────── */
+        #drop-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(26, 26, 46, 0.92);
+            z-index: 30;
+            gap: 20px;
+            pointer-events: none;
+        }
+
+        #drop-overlay.hidden { display: none; }
+
+        #drop-overlay svg {
+            width: 64px;
+            height: 64px;
+            opacity: 0.6;
+        }
+
+        #drop-overlay p {
+            font-size: 1.1rem;
+            color: #9ab;
+            text-align: center;
+            padding: 0 24px;
+        }
+
+        #drop-overlay p strong { color: #e94560; }
+
+        /* ── Drag-active highlight ───────────────────────────────── */
+        body.drag-over #drop-overlay {
+            border: 3px dashed #e94560;
+        }
+
+        /* ── Controls hint ───────────────────────────────────────── */
+        #hint {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            font-size: 0.7rem;
+            color: #567;
+            line-height: 1.6;
+            z-index: 20;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div id="topbar">
+    <h1>IFC Viewer</h1>
+    <button id="upload-btn" onclick="document.getElementById('file-input').click()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Open IFC
+    </button>
+    <input type="file" id="file-input" accept=".ifc">
+    <span id="status">No model loaded</span>
+</div>
+
+<!-- 3D viewport -->
+<div id="viewer-wrap">
+    <canvas id="myCanvas"></canvas>
+    <canvas id="myNavCubeCanvas"></canvas>
+
+    <!-- Drop-to-open overlay (shown until a model is loaded) -->
+    <div id="drop-overlay">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#e94560" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <p>Click <strong>Open IFC</strong> or<br>drop a <strong>.ifc</strong> file here</p>
+    </div>
+
+    <div id="hint">
+        🖱 Left drag: orbit &nbsp;·&nbsp; Right drag: pan &nbsp;·&nbsp; Scroll: zoom<br>
+        📱 One finger: orbit &nbsp;·&nbsp; Two fingers: pan / pinch-zoom
+    </div>
+</div>
+
+<script type="module">
+
+import { Viewer, WebIFCLoaderPlugin, NavCubePlugin }
+    from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@2.6.106/dist/xeokit-sdk.min.es.js";
+
+import * as WebIFC
+    from "https://cdn.jsdelivr.net/npm/web-ifc@0.0.51/web-ifc-api.js";
+
+// ── Set up viewer ──────────────────────────────────────────────────────────
+const viewer = new Viewer({
+    canvasId: "myCanvas",
+    transparent: true,
+    dtxEnabled: true
+});
+
+viewer.camera.eye  = [-3.933, 2.855, 27.018];
+viewer.camera.look = [4.400,  3.724,  8.899];
+viewer.camera.up   = [-0.018, 0.999,  0.039];
+
+new NavCubePlugin(viewer, {
+    canvasId: "myNavCubeCanvas",
+    visible: true,
+    size: 180,
+    alignment: "bottomRight",
+    bottomMargin: 0,
+    rightMargin: 0
+});
+
+// ── Initialise web-ifc ─────────────────────────────────────────────────────
+const IfcAPI = new WebIFC.IfcAPI();
+IfcAPI.SetWasmPath("https://cdn.jsdelivr.net/npm/web-ifc@0.0.51/");
+
+let ifcLoader = null;
+let currentModel = null;
+
+IfcAPI.Init().then(() => {
+    ifcLoader = new WebIFCLoaderPlugin(viewer, { WebIFC, IfcAPI });
+    setStatus("Ready — open an IFC file to begin");
+}).catch(err => {
+    setStatus("Failed to initialise web-ifc: " + err.message);
+});
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+const overlay  = document.getElementById("drop-overlay");
+const statusEl = document.getElementById("status");
+
+function setStatus(msg) { statusEl.textContent = msg; }
+
+function hideOverlay() { overlay.classList.add("hidden"); }
+
+// ── Load an IFC ArrayBuffer ────────────────────────────────────────────────
+function loadIFC(arrayBuffer, filename) {
+    if (!ifcLoader) { setStatus("Initialising — please wait…"); return; }
+
+    // Destroy the previous model if any
+    if (currentModel) {
+        currentModel.destroy();
+        currentModel = null;
+    }
+
+    setStatus("Loading " + filename + "…");
+    hideOverlay();
+
+    const t0 = performance.now();
+
+    currentModel = ifcLoader.load({
+        id: "model",
+        ifc: arrayBuffer,        // pass ArrayBuffer directly
+        loadMetadata: true,
+        excludeTypes: ["IfcSpace"],
+        edges: true
+    });
+
+    currentModel.on("loaded", () => {
+        const secs = ((performance.now() - t0) / 1000).toFixed(2);
+        const objs = currentModel.numEntities;
+        setStatus(`${filename}  ·  ${objs} objects  ·  loaded in ${secs}s`);
+        viewer.cameraFlight.jumpTo(currentModel);
+    });
+
+    currentModel.on("error", e => {
+        setStatus("Error loading model: " + e);
+    });
+}
+
+// ── File input ────────────────────────────────────────────────────────────
+document.getElementById("file-input").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => loadIFC(ev.target.result, file.name);
+    reader.readAsArrayBuffer(file);
+    e.target.value = ""; // reset so same file can be re-opened
+});
+
+// ── Drag-and-drop ──────────────────────────────────────────────────────────
+const wrap = document.getElementById("viewer-wrap");
+
+document.body.addEventListener("dragover", e => {
+    e.preventDefault();
+    document.body.classList.add("drag-over");
+});
+
+document.body.addEventListener("dragleave", e => {
+    if (!e.relatedTarget || !document.body.contains(e.relatedTarget)) {
+        document.body.classList.remove("drag-over");
+    }
+});
+
+document.body.addEventListener("drop", e => {
+    e.preventDefault();
+    document.body.classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.name.toLowerCase().endsWith(".ifc")) {
+        setStatus("Please drop a .ifc file");
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => loadIFC(ev.target.result, file.name);
+    reader.readAsArrayBuffer(file);
+});
+
+</script>
+</body>
+</html>
