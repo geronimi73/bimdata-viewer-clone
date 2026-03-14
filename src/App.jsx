@@ -32,6 +32,8 @@ export default function App() {
         viewer.camera.look = [4.400,  3.724,  8.899];
         viewer.camera.up   = [-0.018, 0.999,  0.039];
 
+        viewer.cameraControl.pivotingEnabled = true;
+
         new NavCubePlugin(viewer, {
             canvasElement: navCubeRef.current,
             visible: true,
