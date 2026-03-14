@@ -8,9 +8,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.2.1",
     "@xeokit/xeokit-sdk": "2.6.78",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "tailwindcss": "^4.2.1",
     "web-ifc": "0.0.51"
   },
   "devDependencies": {

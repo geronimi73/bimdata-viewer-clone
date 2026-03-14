@@ -1,24 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { Viewer, WebIFCLoaderPlugin, NavCubePlugin, OBJLoaderPlugin, LASLoaderPlugin } from '@xeokit/xeokit-sdk';
 import * as WebIFC from 'web-ifc';
-import './App.css';
 
 export default function App() {
     const canvasRef    = useRef(null);
     const navCubeRef   = useRef(null);
     const fileInputRef = useRef(null);
 
-    const viewerRef      = useRef(null);
-    const ifcLoaderRef   = useRef(null);
-    const objLoaderRef   = useRef(null);
-    const lasLoaderRef   = useRef(null);
+    const viewerRef       = useRef(null);
+    const ifcLoaderRef    = useRef(null);
+    const objLoaderRef    = useRef(null);
+    const lasLoaderRef    = useRef(null);
     const modelCounterRef = useRef(0);
     const loadedModelsRef = useRef({});
 
-    const [status, setStatus]         = useState('No models loaded');
-    const [models, setModels]         = useState({});
-    const [showOverlay, setShowOverlay] = useState(true);
-    const [isDragOver, setIsDragOver]  = useState(false);
+    const [status, setStatus]               = useState('No models loaded');
+    const [models, setModels]               = useState({});
+    const [showOverlay, setShowOverlay]     = useState(true);
+    const [isDragOver, setIsDragOver]       = useState(false);
     const [listCollapsed, setListCollapsed] = useState(false);
 
     useEffect(() => {
@@ -62,8 +61,7 @@ export default function App() {
 
     function syncModels() {
         setModels({ ...loadedModelsRef.current });
-        const count = Object.keys(loadedModelsRef.current).length;
-        if (count === 0) setShowOverlay(true);
+        if (Object.keys(loadedModelsRef.current).length === 0) setShowOverlay(true);
     }
 
     function removeModel(id) {
@@ -84,11 +82,7 @@ export default function App() {
         setShowOverlay(false);
         const t0    = performance.now();
         const model = ifcLoaderRef.current.load({
-            id,
-            ifc: arrayBuffer,
-            loadMetadata: true,
-            excludeTypes: ['IfcSpace'],
-            edges: true,
+            id, ifc: arrayBuffer, loadMetadata: true, excludeTypes: ['IfcSpace'], edges: true,
         });
         model.on('loaded', () => {
             const secs = ((performance.now() - t0) / 1000).toFixed(2);
@@ -180,9 +174,13 @@ export default function App() {
 
     return (
         <>
-            <div className="topbar">
-                <h1>3D Viewer</h1>
-                <button className="upload-btn" onClick={() => fileInputRef.current.click()}>
+            {/* Top bar */}
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-white border-b border-slate-200 shrink-0 z-10">
+                <h1 className="text-base font-semibold text-accent tracking-wide whitespace-nowrap">3D Viewer</h1>
+                <button
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-accent hover:bg-accent-hover text-white rounded-md text-sm font-semibold cursor-pointer transition-colors whitespace-nowrap"
+                    onClick={() => fileInputRef.current.click()}
+                >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="17 8 12 3 7 8"/>
@@ -192,53 +190,66 @@ export default function App() {
                 </button>
                 <input
                     ref={fileInputRef}
-                    className="file-input"
+                    className="hidden"
                     type="file"
                     accept=".ifc,.obj,.las,.laz"
                     multiple
                     onChange={onFileInputChange}
                 />
-                <span className="status">{status}</span>
+                <span className="text-xs text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap flex-1">{status}</span>
             </div>
 
+            {/* Viewer */}
             <div
-                className={`viewer-wrap${isDragOver ? ' drag-over' : ''}`}
+                className={`relative flex-1 overflow-hidden bg-slate-100 ${isDragOver ? 'outline outline-[3px] outline-dashed outline-accent -outline-offset-[3px]' : ''}`}
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
                 onDrop={onDrop}
             >
-                <canvas ref={canvasRef} className="main-canvas" />
-                <canvas ref={navCubeRef} className="navcube-canvas" />
+                <canvas ref={canvasRef} className="w-full h-full block touch-none" />
+                <canvas ref={navCubeRef} className="absolute w-[120px] h-[120px] min-[600px]:w-[180px] min-[600px]:h-[180px] bottom-4 right-4 z-20 rounded-md overflow-hidden" />
 
+                {/* Model list */}
                 {modelEntries.length > 0 && (
-                    <div className="model-list-panel">
-                        <div className="model-list-header" onClick={() => setListCollapsed(c => !c)}>
+                    <div className="absolute top-2 left-2 z-[25] bg-white/95 border border-slate-200 rounded-lg min-w-[200px] max-w-[300px] max-h-[calc(100%-16px)] overflow-y-auto flex flex-col shadow-sm">
+                        <div
+                            className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 text-[0.72rem] font-bold text-slate-400 uppercase tracking-widest cursor-pointer select-none hover:text-slate-700"
+                            onClick={() => setListCollapsed(c => !c)}
+                        >
                             <span>Loaded Models</span>
-                            <span className="model-list-toggle-icon">{listCollapsed ? '▼' : '▲'}</span>
+                            <span className="text-[0.6rem]">{listCollapsed ? '▼' : '▲'}</span>
                         </div>
-                        <div className={`model-list-body${listCollapsed ? ' collapsed' : ''}`}>
+                        <div className={listCollapsed ? 'hidden' : 'py-1'}>
                             {modelEntries.map(([id, entry]) => (
-                                <div key={id} className="model-item">
-                                    <span className="model-item-name" title={entry.name}>{entry.name}</span>
-                                    <span className="model-item-type">{entry.ext}</span>
-                                    <button className="model-item-remove" title="Remove" onClick={() => removeModel(id)}>×</button>
+                                <div key={id} className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-slate-700 border-b border-slate-100 last:border-b-0">
+                                    <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap" title={entry.name}>{entry.name}</span>
+                                    <span className="text-[0.62rem] px-1 py-0.5 rounded bg-slate-200 text-slate-500 uppercase shrink-0">{entry.ext}</span>
+                                    <button
+                                        className="bg-transparent border-none text-accent cursor-pointer text-base leading-none px-0.5 opacity-60 hover:opacity-100 shrink-0"
+                                        title="Remove"
+                                        onClick={() => removeModel(id)}
+                                    >×</button>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
 
+                {/* Drop overlay */}
                 {showOverlay && (
-                    <div className="drop-overlay">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#e94560" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100/90 z-30 gap-5 pointer-events-none">
+                        <svg className="w-16 h-16 opacity-50" viewBox="0 0 24 24" fill="none" stroke="#e94560" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                         </svg>
-                        <p>Click <strong>Open File</strong> or drop a file here<br/>
-                        <strong>IFC · OBJ · LAS/LAZ</strong></p>
+                        <p className="text-lg text-slate-500 text-center px-6">
+                            Click <strong className="text-accent">Open File</strong> or drop a file here<br/>
+                            <strong className="text-accent">IFC · OBJ · LAS/LAZ</strong>
+                        </p>
                     </div>
                 )}
 
-                <div className="hint">
+                {/* Controls hint */}
+                <div className="absolute bottom-4 left-4 text-[0.7rem] text-slate-400 leading-relaxed z-20 pointer-events-none">
                     🖱 Left drag: orbit &nbsp;·&nbsp; Right drag: pan &nbsp;·&nbsp; Scroll: zoom<br/>
                     📱 One finger: orbit &nbsp;·&nbsp; Two fingers: pan / pinch-zoom
                 </div>
