@@ -4,8 +4,8 @@
     align-items: center;
     gap: 12px;
     padding: 10px 16px;
-    background: #16213e;
-    border-bottom: 1px solid #0f3460;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
     z-index: 10;
     flex-shrink: 0;
 }
@@ -40,7 +40,7 @@
 
 .status {
     font-size: 0.78rem;
-    color: #9ab;
+    color: #6b7280;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -52,6 +52,7 @@
     position: relative;
     flex: 1;
     overflow: hidden;
+    background: #f0f2f5;
 }
 
 .viewer-wrap.drag-over .drop-overlay {
@@ -92,7 +93,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(26, 26, 46, 0.92);
+    background: rgba(240, 242, 245, 0.92);
     z-index: 30;
     gap: 20px;
     pointer-events: none;
@@ -101,12 +102,12 @@
 .drop-overlay svg {
     width: 64px;
     height: 64px;
-    opacity: 0.6;
+    opacity: 0.5;
 }
 
 .drop-overlay p {
     font-size: 1.1rem;
-    color: #9ab;
+    color: #6b7280;
     text-align: center;
     padding: 0 24px;
 }
@@ -119,7 +120,7 @@
     bottom: 16px;
     left: 16px;
     font-size: 0.7rem;
-    color: #567;
+    color: #9ca3af;
     line-height: 1.6;
     z-index: 20;
     pointer-events: none;
@@ -131,8 +132,8 @@
     top: 8px;
     left: 8px;
     z-index: 25;
-    background: rgba(22, 33, 62, 0.92);
-    border: 1px solid #0f3460;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
     min-width: 200px;
     max-width: 300px;
@@ -140,6 +141,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .model-list-header {
@@ -147,17 +149,17 @@
     align-items: center;
     justify-content: space-between;
     padding: 7px 12px;
-    border-bottom: 1px solid #0f3460;
+    border-bottom: 1px solid #e2e8f0;
     font-size: 0.72rem;
     font-weight: 700;
-    color: #9ab;
+    color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     cursor: pointer;
     user-select: none;
 }
 
-.model-list-header:hover { color: #e0e0e0; }
+.model-list-header:hover { color: #1f2937; }
 
 .model-list-toggle-icon { font-size: 0.6rem; }
 
@@ -171,8 +173,8 @@
     gap: 6px;
     padding: 5px 10px;
     font-size: 0.75rem;
-    color: #cde;
-    border-bottom: 1px solid rgba(15, 52, 96, 0.4);
+    color: #374151;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .model-item:last-child { border-bottom: none; }
@@ -188,8 +190,8 @@
     font-size: 0.62rem;
     padding: 1px 4px;
     border-radius: 3px;
-    background: #0f3460;
-    color: #9ab;
+    background: #e2e8f0;
+    color: #6b7280;
     text-transform: uppercase;
     flex-shrink: 0;
 }
