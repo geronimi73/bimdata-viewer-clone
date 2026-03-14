@@ -1,0 +1,20 @@
+{
+  "name": "bimdata-viewer-clone",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@xeokit/xeokit-sdk": "2.6.78",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "web-ifc": "0.0.51"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.2"
+  }
+}
