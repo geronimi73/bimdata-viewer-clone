@@ -131,6 +131,19 @@ export default function App() {
         model.on('error', e => setStatus('Error loading LAS/LAZ: ' + e));
     }
 
+    async function loadExample(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        setStatus('Loading ' + filename + '…');
+        try {
+            const res = await fetch('/' + filename);
+            const buf = await res.arrayBuffer();
+            if (ext === 'ifc') _loadIFC(buf, filename);
+            else if (ext === 'las' || ext === 'laz') _loadLAS(buf, filename, ext);
+        } catch (e) {
+            setStatus('Failed to load example: ' + e.message);
+        }
+    }
+
     function handleFile(file) {
         const ext = file.name.split('.').pop().toLowerCase();
         if (ext === 'ifc') {
@@ -245,6 +258,24 @@ export default function App() {
                             Click <strong className="text-accent">Open File</strong> or drop a file here<br/>
                             <strong className="text-accent">IFC · OBJ · LAS/LAZ</strong>
                         </p>
+                        <div className="flex flex-col items-center gap-2 pointer-events-auto">
+                            <span className="text-xs text-slate-400 uppercase tracking-widest">or try an example</span>
+                            <div className="flex gap-2">
+                                {[
+                                    { file: 'walls.ifc',   label: 'Walls',  ext: 'IFC' },
+                                    { file: 'Monkey.las',  label: 'Monkey', ext: 'LAS' },
+                                ].map(({ file, label, ext }) => (
+                                    <button
+                                        key={file}
+                                        onClick={() => loadExample(file)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-600 cursor-pointer transition-colors shadow-sm"
+                                    >
+                                        {label}
+                                        <span className="text-[0.6rem] px-1 py-0.5 rounded bg-slate-100 text-slate-400 uppercase">{ext}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
 
