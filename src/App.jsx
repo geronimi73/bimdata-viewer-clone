@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Viewer, WebIFCLoaderPlugin, NavCubePlugin, OBJLoaderPlugin, LASLoaderPlugin } from '@xeokit/xeokit-sdk';
 import * as WebIFC from 'web-ifc';
+import JSZip from 'jszip';
 
 export default function App() {
     const canvasRef    = useRef(null);
@@ -20,6 +21,7 @@ export default function App() {
     const [isDragOver, setIsDragOver]       = useState(false);
     const [listCollapsed, setListCollapsed] = useState(false);
     const [isLoading, setIsLoading]         = useState(false);
+    const [captureProgress, setCaptureProgress] = useState(null); // null | { current, total }
 
     useEffect(() => {
         const viewer = new Viewer({
@@ -145,6 +147,44 @@ export default function App() {
         }));
     }
 
+    async function captureScreenshots() {
+        const N = 8;
+        const angleStep = 360 / N;
+        setCaptureProgress({ current: 0, total: N });
+
+        const camera = viewerRef.current.camera;
+        const savedEye  = [...camera.eye];
+        const savedLook = [...camera.look];
+        const savedUp   = [...camera.up];
+
+        camera.orbitPitch(25);
+
+        const snapshots = [];
+        for (let i = 0; i < N; i++) {
+            setCaptureProgress({ current: i + 1, total: N });
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            snapshots.push(viewerRef.current.getSnapshot({ format: 'png' }));
+            if (i < N - 1) camera.orbitYaw(angleStep);
+        }
+
+        camera.eye  = savedEye;
+        camera.look = savedLook;
+        camera.up   = savedUp;
+
+        const zip = new JSZip();
+        snapshots.forEach((dataUrl, i) => {
+            zip.file(`screenshot-${String(i + 1).padStart(2, '0')}.png`, dataUrl.split(',')[1], { base64: true });
+        });
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'screenshots.zip';
+        a.click();
+        URL.revokeObjectURL(a.href);
+
+        setCaptureProgress(null);
+    }
+
     async function loadExample(filename) {
         const ext = filename.split('.').pop().toLowerCase();
         setStatus('Loading ' + filename + '…');
@@ -215,6 +255,29 @@ export default function App() {
                     </svg>
                     Open File
                 </button>
+                {Object.keys(models).length > 0 && (
+                    <button
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 border border-slate-200 rounded-md text-sm font-semibold cursor-pointer transition-colors whitespace-nowrap"
+                        onClick={captureScreenshots}
+                        disabled={captureProgress !== null || isLoading}
+                    >
+                        {captureProgress ? (
+                            <>
+                                <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-slate-600 animate-spin" />
+                                {captureProgress.current}/{captureProgress.total}
+                            </>
+                        ) : (
+                            <>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                    <circle cx="12" cy="13" r="4"/>
+                                </svg>
+                                Capture
+                            </>
+                        )}
+                    </button>
+                )}
+
                 <input
                     ref={fileInputRef}
                     className="hidden"
