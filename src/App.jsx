@@ -27,7 +27,7 @@ export default function App() {
         const viewer = new Viewer({
             canvasElement: canvasRef.current,
             transparent: true,
-            dtxEnabled: true,
+            dtxEnabled: false,
         });
 
         viewer.camera.eye  = [-3.933, 2.855, 27.018];
