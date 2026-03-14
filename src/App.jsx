@@ -19,6 +19,7 @@ export default function App() {
     const [showOverlay, setShowOverlay]     = useState(true);
     const [isDragOver, setIsDragOver]       = useState(false);
     const [listCollapsed, setListCollapsed] = useState(false);
+    const [isLoading, setIsLoading]         = useState(false);
 
     useEffect(() => {
         const viewer = new Viewer({
@@ -79,56 +80,69 @@ export default function App() {
         if (!ifcLoaderRef.current) { setStatus('Initialising — please wait…'); return; }
         const id = 'model-' + (++modelCounterRef.current);
         setStatus('Loading ' + filename + '…');
+        setIsLoading(true);
         setShowOverlay(false);
-        const t0    = performance.now();
-        const model = ifcLoaderRef.current.load({
-            id, ifc: arrayBuffer, loadMetadata: true, excludeTypes: ['IfcSpace'], edges: true,
-        });
-        model.on('loaded', () => {
-            const secs = ((performance.now() - t0) / 1000).toFixed(2);
-            loadedModelsRef.current[id] = { name: filename, ext: 'ifc', entity: model, blobUrl: null };
-            syncModels();
-            setStatus(`${filename}  ·  ${model.numEntities} objects  ·  loaded in ${secs}s`);
-            viewerRef.current.cameraFlight.jumpTo(model);
-        });
-        model.on('error', e => setStatus('Error loading IFC: ' + e));
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const t0    = performance.now();
+            const model = ifcLoaderRef.current.load({
+                id, ifc: arrayBuffer, loadMetadata: true, excludeTypes: ['IfcSpace'], edges: true,
+            });
+            model.on('loaded', () => {
+                const secs = ((performance.now() - t0) / 1000).toFixed(2);
+                loadedModelsRef.current[id] = { name: filename, ext: 'ifc', entity: model, blobUrl: null };
+                syncModels();
+                setIsLoading(false);
+                setStatus(`${filename}  ·  ${model.numEntities} objects  ·  loaded in ${secs}s`);
+                viewerRef.current.cameraFlight.jumpTo(model);
+            });
+            model.on('error', e => { setIsLoading(false); setStatus('Error loading IFC: ' + e); });
+        }));
     }
 
     function _loadOBJ(blobUrl, filename) {
         if (!objLoaderRef.current) { setStatus('Initialising — please wait…'); return; }
         const id = 'model-' + (++modelCounterRef.current);
         setStatus('Loading ' + filename + '…');
+        setIsLoading(true);
         setShowOverlay(false);
-        const t0    = performance.now();
-        const model = objLoaderRef.current.load({ id, src: blobUrl, edges: true });
-        model.on('loaded', () => {
-            const secs = ((performance.now() - t0) / 1000).toFixed(2);
-            loadedModelsRef.current[id] = { name: filename, ext: 'obj', entity: model, blobUrl };
-            syncModels();
-            setStatus(`${filename}  ·  ${model.numEntities} objects  ·  loaded in ${secs}s`);
-            viewerRef.current.cameraFlight.jumpTo(model);
-        });
-        model.on('error', e => {
-            URL.revokeObjectURL(blobUrl);
-            setStatus('Error loading OBJ: ' + e);
-        });
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const t0    = performance.now();
+            const model = objLoaderRef.current.load({ id, src: blobUrl, edges: true });
+            model.on('loaded', () => {
+                const secs = ((performance.now() - t0) / 1000).toFixed(2);
+                loadedModelsRef.current[id] = { name: filename, ext: 'obj', entity: model, blobUrl };
+                syncModels();
+                setIsLoading(false);
+                setStatus(`${filename}  ·  ${model.numEntities} objects  ·  loaded in ${secs}s`);
+                viewerRef.current.cameraFlight.jumpTo(model);
+            });
+            model.on('error', e => {
+                URL.revokeObjectURL(blobUrl);
+                setIsLoading(false);
+                setStatus('Error loading OBJ: ' + e);
+            });
+        }));
     }
 
     function _loadLAS(arrayBuffer, filename, ext) {
         if (!lasLoaderRef.current) { setStatus('Initialising — please wait…'); return; }
         const id = 'model-' + (++modelCounterRef.current);
         setStatus('Loading ' + filename + '…');
+        setIsLoading(true);
         setShowOverlay(false);
-        const t0    = performance.now();
-        const model = lasLoaderRef.current.load({ id, las: arrayBuffer, rotation: [-90, 0, 0] });
-        model.on('loaded', () => {
-            const secs = ((performance.now() - t0) / 1000).toFixed(2);
-            loadedModelsRef.current[id] = { name: filename, ext, entity: model, blobUrl: null };
-            syncModels();
-            setStatus(`${filename}  ·  loaded in ${secs}s`);
-            viewerRef.current.cameraFlight.jumpTo(model);
-        });
-        model.on('error', e => setStatus('Error loading LAS/LAZ: ' + e));
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const t0    = performance.now();
+            const model = lasLoaderRef.current.load({ id, las: arrayBuffer, rotation: [-90, 0, 0] });
+            model.on('loaded', () => {
+                const secs = ((performance.now() - t0) / 1000).toFixed(2);
+                loadedModelsRef.current[id] = { name: filename, ext, entity: model, blobUrl: null };
+                syncModels();
+                setIsLoading(false);
+                setStatus(`${filename}  ·  loaded in ${secs}s`);
+                viewerRef.current.cameraFlight.jumpTo(model);
+            });
+            model.on('error', e => { setIsLoading(false); setStatus('Error loading LAS/LAZ: ' + e); });
+        }));
     }
 
     async function loadExample(filename) {
@@ -209,7 +223,12 @@ export default function App() {
                     multiple
                     onChange={onFileInputChange}
                 />
-                <span className="text-xs text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap flex-1">{status}</span>
+                <div className="flex items-center gap-2 overflow-hidden flex-1">
+                    {isLoading && (
+                        <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 border-t-accent animate-spin shrink-0" />
+                    )}
+                    <span className="text-xs text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap">{status}</span>
+                </div>
             </div>
 
             {/* Viewer */}
@@ -262,8 +281,9 @@ export default function App() {
                             <span className="text-xs text-slate-400 uppercase tracking-widest">or try an example</span>
                             <div className="flex gap-2">
                                 {[
-                                    { file: 'walls.ifc',   label: 'Walls',  ext: 'IFC' },
-                                    { file: 'Monkey.las',  label: 'Monkey', ext: 'LAS' },
+                                    { file: 'walls.ifc',              label: 'Walls',    ext: 'IFC' },
+                                    { file: 'AC20-Institute-Var-2.ifc', label: 'Office Building', ext: 'IFC' },
+                                    { file: 'Monkey.las',             label: 'Monkey',   ext: 'LAS' },
                                 ].map(({ file, label, ext }) => (
                                     <button
                                         key={file}
@@ -276,6 +296,14 @@ export default function App() {
                                 ))}
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* Loading overlay */}
+                {isLoading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-40 pointer-events-none gap-4">
+                        <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-accent animate-spin" />
+                        <span className="text-sm text-slate-500 bg-white/80 px-3 py-1 rounded-full">{status}</span>
                     </div>
                 )}
 
